@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>專注小森林</title>
+<style>
+:root{
+  --bg:#e4efe9; --ink:#17302b; --muted:#53706a; --leaf:#3f8f5b; --leaf2:#2d6e45;
+  --sun:#f2b84b; --dead:#9a7b5b; --panel:#f6fbf8; --line:#c4d9cf;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#112320; --ink:#e3f1ea; --muted:#92b3a8; --leaf:#5fb882; --leaf2:#46996a; --panel:#183029; --line:#2b4a41; --dead:#b39674;}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;line-height:1.6}
+main{max-width:880px;margin:0 auto;padding:28px 18px 60px}
+h1{font-size:2rem;margin:0 0 4px;letter-spacing:.04em}
+.sub{color:var(--muted);margin:0 0 24px}
+.stage{background:var(--panel);border:1px solid var(--line);border-radius:28px;padding:22px;display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:center}
+.custom{display:inline-flex;align-items:center;gap:2px;border:1.5px solid var(--line);border-radius:99px;padding:3px 14px}
+.custom span{margin-right:6px}
+.custom input{width:2.1em;font-variant-numeric:tabular-nums;border:0;background:transparent;color:var(--ink);font:inherit;text-align:center;padding:4px 0;outline:none}
+.custom:focus-within,.custom.on{border-color:var(--ink)}
+.custom.on{background:var(--ink);color:var(--bg)}
+.custom.on input{color:var(--bg)}
+#scene{max-height:360px}
+@media(max-width:720px){
+  main{padding:18px 14px 48px}
+  .stage{grid-template-columns:1fr;padding:16px;border-radius:22px;gap:14px}
+  #scene{max-height:240px;margin:0 auto}
+  .go{width:100%;padding:14px}
+  .stats{justify-content:space-between;gap:12px}
+  #forest{grid-template-columns:repeat(auto-fill,minmax(76px,1fr))}
+}
+@media(max-width:380px){h1{font-size:1.6rem}.durs button{padding:7px 11px}}
+#scene{width:100%;height:auto;display:block}
+.time{font-size:clamp(2.1rem,8vw,3.4rem);font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+.state{color:var(--muted);min-height:1.6em;margin:6px 0 14px}
+.durs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.durs button{border:1.5px solid var(--line);background:transparent;color:var(--ink);padding:7px 14px;border-radius:99px;font:inherit;cursor:pointer}
+.durs button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.durs button:disabled{opacity:.4;cursor:not-allowed}
+.go{border:0;background:var(--leaf);color:#fff;font:inherit;font-weight:700;padding:12px 28px;border-radius:14px;cursor:pointer;font-size:1.05rem}
+.go:hover{background:var(--leaf2)}
+.go.stop{background:var(--dead)}
+button:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+label.task{display:block;margin-bottom:14px}
+input[type=text]{width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;margin-top:4px}
+.stats{display:flex;gap:26px;margin:30px 0 10px;flex-wrap:wrap}
+.stats div{font-size:.95rem;color:var(--muted)}
+.stats b{display:block;font-size:1.8rem;color:var(--ink)}
+.forest-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px 16px;flex-wrap:wrap;margin-top:18px}
+.forest-head h2{margin:0;font-size:1.25rem}
+.link{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font:inherit}
+#forest{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:10px;margin-top:12px}
+.tree{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:6px 4px 8px;text-align:center;font-size:.72rem;color:var(--muted);animation:pop .4s ease-out}
+.tree svg{width:100%;height:64px}
+.tree span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 4px}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+.actions{display:flex;gap:6px 16px;flex-wrap:wrap;justify-content:flex-end}
+.link.danger{color:#c0463a}
+.link[hidden]{display:none}
+.tree{position:relative}
+.tree.selectable{cursor:pointer;user-select:none}
+.tree.selectable:hover{border-color:var(--ink)}
+.tree.sel{outline:3px solid var(--sun);outline-offset:-1px;background:var(--bg)}
+.tree.sel::after{content:"✓";position:absolute;top:4px;right:6px;width:20px;height:20px;border-radius:50%;background:var(--sun);color:#17302b;font-size:.8rem;font-weight:700;line-height:20px}
+.empty{grid-column:1/-1;color:var(--muted);padding:24px;text-align:center;border:1.5px dashed var(--line);border-radius:16px}
+@media(prefers-reduced-motion:reduce){.tree{animation:none}}
+.tabs{display:flex;gap:8px;margin:0 0 20px;flex-wrap:wrap}
+.tabs button{border:1.5px solid var(--line);background:transparent;color:var(--ink);padding:9px 20px;border-radius:99px;font:inherit;cursor:pointer}
+.tabs button[aria-selected=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+[hidden]{display:none!important}
+:root{--sky1:#b5dde6;--sky2:#ecf6df;--glowo:.6;--hill1:#a4cdb0;--hill2:#86b796;--far:#5f9a74;--grass1:#78b46d;--grass2:#3f8a4a;--path1:#e6d5ad;--path2:#c9b183;--pathe:#b39a6c}
+@media(prefers-color-scheme:dark){:root{--sky1:#0d2029;--sky2:#2b4b46;--glowo:.18;--hill1:#25483f;--hill2:#1c3b34;--far:#173a30;--grass1:#2d5b3c;--grass2:#1b4127;--path1:#7b6d50;--path2:#5a4d34;--pathe:#463b27}}
+.gh{margin:0 0 4px;font-size:1.5rem}
+.garden{position:relative;border-radius:28px;overflow:hidden;border:1px solid var(--line)}
+#garden{width:100%;height:auto;display:block}
+#garden .tr{cursor:pointer}
+#garden .tr:focus-visible{outline:3px solid var(--sun);outline-offset:4px}
+.newest{animation:grow .9s ease-out;transform-box:fill-box;transform-origin:50% 100%}
+@keyframes grow{from{transform:scale(.2);opacity:0}to{transform:none;opacity:1}}
+.gempty{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);width:min(82%,300px);background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:16px 20px;text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center}
+.gempty span{color:var(--muted)}
+.gbar{display:flex;justify-content:space-between;align-items:center;gap:10px 20px;flex-wrap:wrap;margin-top:14px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chips span{border:1px solid var(--line);background:var(--panel);border-radius:99px;padding:3px 12px;font-size:.85rem}
+.chips i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+@media(prefers-reduced-motion:reduce){.newest{animation:none}}
+</style>
+</head>
+<body>
+<main>
+  <h1>專注小森林</h1>
+  <p class="sub">設定時間，專心做事，種下一棵樹。中途放棄，樹就會枯萎。</p>
+
+  <nav class="tabs" role="tablist" aria-label="頁面切換">
+    <button role="tab" id="tabFocus" aria-selected="true">專注</button>
+    <button role="tab" id="tabGarden" aria-selected="false">後花園</button>
+  </nav>
+
+  <div id="viewFocus">
+  <section class="stage">
+    <svg id="scene" viewBox="0 0 240 240" role="img" aria-label="正在生長的樹"></svg>
+    <div>
+      <label class="task">這次要專心做什麼？
+        <input type="text" id="task" maxlength="20" placeholder="例如：寫英文作業">
+      </label>
+      <div class="durs" id="durs" role="group" aria-label="選擇專注時間">
+        <button data-m="0.2" aria-pressed="false">12 秒（試玩）</button>
+        <button data-m="15" aria-pressed="false">15 分</button>
+        <button data-m="25" aria-pressed="true">25 分</button>
+        <button data-m="45" aria-pressed="false">45 分</button>
+        <div class="custom" id="customBox" role="group" aria-label="自訂時間（時、分、秒）"><span>自訂</span><input id="cH" type="text" inputmode="numeric" maxlength="2" placeholder="00" aria-label="小時">:<input id="cM" type="text" inputmode="numeric" maxlength="2" placeholder="00" aria-label="分鐘">:<input id="cS" type="text" inputmode="numeric" maxlength="2" placeholder="00" aria-label="秒"></div>
+      </div>
+      <div class="time" id="time">00:25:00</div>
+      <div class="state" id="state">準備好就按開始。</div>
+      <button class="go" id="go">開始專注</button>
+    </div>
+  </section>
+
+  <section class="stats" aria-label="統計">
+    <div><b id="sTrees">0</b>成功種下的樹</div>
+    <div><b id="sMin">0</b>累積專注分鐘</div>
+    <div><b id="sDead">0</b>枯萎的樹</div>
+  </section>
+
+  <div class="forest-head">
+    <h2>我的森林</h2>
+    <div class="actions">
+      <button class="link" id="selBtn">選擇刪除</button>
+      <button class="link danger" id="delSel" hidden>刪除選取（0）</button>
+      <button class="link" id="cancelSel" hidden>取消</button>
+      <button class="link danger" id="clear">一鍵刪除</button>
+    </div>
+  </div>
+  <div id="forest"></div>
+  </div>
+
+  <section id="viewGarden" hidden>
+    <h2 class="gh">我的後花園</h2>
+    <p class="sub">每一棵成功種下的樹，都會長在林間小道旁。</p>
+    <div class="garden">
+      <svg id="garden" viewBox="0 0 800 480" role="img" aria-label="林間小道後花園"></svg>
+      <div class="gempty" id="gEmpty"><b>後花園還是空的</b><span>完成一次專注，種下第一棵樹。</span><button class="go" id="gGo">去專注</button></div>
+    </div>
+    <div class="gbar"><div id="gCount"></div><div class="chips" id="gChips"></div></div>
+    <p class="state" id="gInfo">點一下樹，看看它是哪次專注種下的。</p>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const KEY = 'focus-forest-v1';
+let secs = 1500, timer = null, endAt = 0, total = 0, running = false;
+let data = { trees: [] };
+
+try { const s = localStorage.getItem(KEY); if (s) data = JSON.parse(s); } catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {} };
+
+/* ---- 水果種類 ---- */
+const FRUITS = {
+  apple:  {name:'蘋果',   leaf:['#3f8f5b','#58aa73']},
+  orange: {name:'柳橙',   leaf:['#2f8450','#4ca06a']},
+  lemon:  {name:'檸檬',   leaf:['#5a9a3c','#7cb85a']},
+  cherry: {name:'櫻桃',   leaf:['#2d7a58','#46966f']},
+  peach:  {name:'水蜜桃', leaf:['#4f9a62','#6cb67c']},
+  grape:  {name:'葡萄',   leaf:['#3a8a5a','#55a574']}
+};
+const FRUIT_KEYS = Object.keys(FRUITS);
+function fruitShape(type, x, y){
+  switch(type){
+    case 'apple':  return `<circle cx="${x}" cy="${y}" r="7" fill="#d94b43"/><path d="M${x} ${y-7}q3-5 6-4q-2 5-6 4" fill="#2d6e45"/>`;
+    case 'orange': return `<circle cx="${x}" cy="${y}" r="7.5" fill="#f28c28"/><circle cx="${x}" cy="${y-7}" r="1.6" fill="#2d6e45"/>`;
+    case 'lemon':  return `<ellipse cx="${x}" cy="${y}" rx="8.5" ry="5.5" fill="#f2d544"/><circle cx="${x+8}" cy="${y}" r="1.6" fill="#f2d544"/><circle cx="${x-8}" cy="${y}" r="1.6" fill="#f2d544"/>`;
+    case 'cherry': return `<path d="M${x-3} ${y} Q${x} ${y-14} ${x+4} ${y-14} M${x+5} ${y+1} Q${x+5} ${y-10} ${x+4} ${y-14}" stroke="#2d6e45" stroke-width="1.5" fill="none"/><circle cx="${x-3}" cy="${y+2}" r="4.5" fill="#b0173a"/><circle cx="${x+5}" cy="${y+3}" r="4.5" fill="#c9244a"/>`;
+    case 'peach':  return `<circle cx="${x}" cy="${y}" r="7" fill="#f7a38c"/><path d="M${x} ${y-6}Q${x-2} ${y} ${x} ${y+6}" stroke="#e0765f" stroke-width="1.2" fill="none"/><path d="M${x} ${y-7}q3-5 6-3q-2 4-6 3" fill="#2d6e45"/>`;
+    case 'grape':  return `<g fill="#7a4bb0"><circle cx="${x-4}" cy="${y-3}" r="4"/><circle cx="${x+4}" cy="${y-3}" r="4"/><circle cx="${x}" cy="${y+3}" r="4"/><circle cx="${x}" cy="${y-8}" r="3.2" fill="#9468c4"/></g>`;
+  }
+  return '';
+}
+const FRUIT_POS = [[150,100],[92,118],[120,72],[168,128],[76,92],[134,138]];
+
+/* ---- 畫樹：p = 0~1 的成長進度；dead = 枯萎 ---- */
+function treeSVG(p, dead, withGround, fruit) {
+  fruit = FRUITS[fruit] ? fruit : 'apple';
+  const trunkH = 20 + 70 * p;
+  const trunk = dead ? '#7a5f45' : '#7b5a3a';
+  const c1 = dead ? '#b8a07c' : FRUITS[fruit].leaf[0];
+  const c2 = dead ? '#a58d6a' : FRUITS[fruit].leaf[1];
+  const s = 0.15 + 0.85 * p;
+  let g = '';
+  if (withGround) g += '<ellipse cx="120" cy="210" rx="90" ry="14" fill="currentColor" opacity=".12"/>';
+  g += `<rect x="113" y="${210 - trunkH}" width="14" height="${trunkH}" rx="5" fill="${trunk}"/>`;
+  if (dead) {
+    g += `<path d="M120 ${210 - trunkH + 20} L98 ${210 - trunkH - 4} M120 ${210 - trunkH + 8} L144 ${210 - trunkH - 10}" stroke="${trunk}" stroke-width="5" stroke-linecap="round"/>`;
+    g += `<circle cx="104" cy="${210 - trunkH - 6}" r="12" fill="${c1}" opacity=".7"/><circle cx="142" cy="${210 - trunkH - 12}" r="9" fill="${c2}" opacity=".7"/>`;
+  } else {
+    const cy = 210 - trunkH;
+    g += `<g transform="translate(120 ${cy}) scale(${s}) translate(-120 -${cy})">
+      <circle cx="120" cy="${cy - 12}" r="46" fill="${c1}"/>
+      <circle cx="90" cy="${cy + 6}" r="32" fill="${c2}"/>
+      <circle cx="150" cy="${cy + 6}" r="32" fill="${c2}"/></g>`;
+    if (p >= 1) {
+      const dy = cy - 120; // 水果座標以成熟樹冠 (cy=120) 為基準
+      FRUIT_POS.forEach(([fx, fy]) => { g += fruitShape(fruit, fx, fy + dy); });
+    }
+  }
+  return g;
+}
+function drawScene(p, dead, fruit) {
+  $('scene').innerHTML =
+    '<g style="color:var(--ink)">' + treeSVG(p, dead, true, fruit) + '</g>' +
+    (p === 0 && !dead ? '<circle cx="120" cy="204" r="6" fill="#7b5a3a"/>' : '');
+}
+
+const fmt = sec => {
+  sec = Math.max(0, Math.ceil(sec));
+  const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), r = sec % 60;
+  return [h, m, r].map(n => String(n).padStart(2, '0')).join(':');
+};
+
+/* ---- 時間選擇 ---- */
+let curFruit = 'apple';
+const cIn = ['cH', 'cM', 'cS'].map(id => $(id));
+const setCustomOn = on => $('customBox').classList.toggle('on', on);
+const cEmpty = () => cIn.every(i => i.value === '');
+const readCustom = () => {
+  const [h, m, r] = cIn.map(i => parseInt(i.value, 10) || 0);
+  return h * 3600 + m * 60 + r;   // 每格最多 99，最大 99:99:99
+};
+cIn.forEach(inp => {
+  inp.addEventListener('input', () => {
+    if (running) return;
+    inp.value = inp.value.replace(/\D/g, '').slice(0, 2);
+    document.querySelectorAll('#durs button').forEach(x => x.setAttribute('aria-pressed', 'false'));
+    const t = readCustom();
+    if (t > 0) {
+      secs = t; setCustomOn(true);
+      $('time').textContent = fmt(t);
+      $('state').textContent = '已設定 ' + fmt(t) + '。';
+      drawScene(0, false);
+    } else {
+      setCustomOn(false);
+      $('state').textContent = '請至少設定 1 秒（每格最大 99）。';
+    }
+  });
+  inp.addEventListener('focus', () => inp.select());
+  inp.addEventListener('blur', () => { if (inp.value !== '') inp.value = inp.value.padStart(2, '0'); });
+});
+document.querySelectorAll('#durs button').forEach(b => {
+  b.addEventListener('click', () => {
+    if (running) return;
+    cIn.forEach(i => i.value = ''); setCustomOn(false);
+    document.querySelectorAll('#durs button').forEach(x => x.setAttribute('aria-pressed', 'false'));
+    b.setAttribute('aria-pressed', 'true');
+    secs = Math.round(parseFloat(b.dataset.m) * 60);
+    $('time').textContent = fmt(secs);
+    drawScene(0, false);
+  });
+});
+function lockUI(lock) {
+  document.querySelectorAll('#durs button').forEach(b => b.disabled = lock);
+  $('task').disabled = lock;
+  cIn.forEach(i => i.disabled = lock);
+}
+
+/* ---- 開始 / 放棄 ---- */
+$('go').addEventListener('click', () => running ? giveUp() : start());
+
+function start() {
+  if (!$('customBox').classList.contains('on') && !cEmpty()) {
+    $('state').textContent = '自訂時間至少要 1 秒，請檢查時、分、秒。';
+    $('cH').focus();
+    return;
+  }
+  curFruit = FRUIT_KEYS[Math.floor(Math.random() * FRUIT_KEYS.length)];
+  running = true;
+  total = secs;
+  endAt = Date.now() + total * 1000;
+  lockUI(true);
+  $('go').textContent = '我放棄了';
+  $('go').classList.add('stop');
+  $('state').textContent = '這是一顆' + FRUITS[curFruit].name + '種子，保持專注…';
+  tick();
+  timer = setInterval(tick, 250);
+}
+function tick() {
+  const left = (endAt - Date.now()) / 1000;
+  const p = Math.min(1, Math.max(0, 1 - left / total));
+  $('time').textContent = fmt(left);
+  document.title = fmt(left) + ' 專注小森林';
+  $('tabFocus').textContent = '專注中 ' + fmt(left);
+  drawScene(p, false, curFruit);
+  if (left <= 0) finish(true);
+}
+function giveUp() {
+  if (!confirm('現在放棄，這棵樹會枯萎喔。確定嗎？')) return;
+  finish(false);
+}
+function finish(ok) {
+  clearInterval(timer);
+  const elapsed = Math.min(total, total - (endAt - Date.now()) / 1000);
+  running = false;
+  lockUI(false);
+  $('go').textContent = '開始專注';
+  $('go').classList.remove('stop');
+  document.title = '專注小森林';
+  $('tabFocus').textContent = '專注';
+  data.trees.push({
+    name: $('task').value.trim() || '專注',
+    mins: Math.round(total / 60 * 10) / 10,
+    done: ok, fruit: curFruit, t: Date.now()
+  });
+  save();
+  if (ok) lastAddedT = data.trees[data.trees.length - 1].t;
+  if (ok) {
+    drawScene(1, false, curFruit);
+    $('state').textContent = '完成了！長出一棵' + FRUITS[curFruit].name + '樹。';
+  } else {
+    drawScene(0.8, true, curFruit);
+    $('state').textContent = '這棵樹枯萎了，下次再試試看。';
+  }
+  $('time').textContent = fmt(secs);
+  render();
+}
+
+/* ---- 森林與統計 ---- */
+let selectMode = false;
+const selected = new Set();
+function render() {
+  if (!$('viewGarden').hidden) renderGarden();
+  const ok = data.trees.filter(t => t.done);
+  $('sTrees').textContent = ok.length;
+  $('sDead').textContent = data.trees.length - ok.length;
+  $('sMin').textContent = Math.round(ok.reduce((a, t) => a + t.mins, 0));
+  const f = $('forest');
+  if (!data.trees.length) {
+    f.innerHTML = '<div class="empty">森林還是空的。完成一次專注，種下第一棵樹吧。</div>';
+    selectMode = false; selected.clear();
+    updateActions();
+    return;
+  }
+  f.innerHTML = '';
+  for (let i = data.trees.length - 1; i >= 0; i--) {
+    const t = data.trees[i];
+    const d = document.createElement('div');
+    d.className = 'tree' + (selectMode ? ' selectable' : '') + (selected.has(i) ? ' sel' : '');
+    if (selectMode) {
+      d.tabIndex = 0;
+      d.setAttribute('role', 'checkbox');
+      d.setAttribute('aria-checked', selected.has(i));
+      const toggle = () => {
+        selected.has(i) ? selected.delete(i) : selected.add(i);
+        render();
+      };
+      d.addEventListener('click', toggle);
+      d.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggle(); } });
+    }
+    d.title = (t.done ? '完成（' + FRUITS[t.fruit||'apple'].name + '樹）：' : '放棄：') + t.name + '（' + t.mins + ' 分）';
+    d.innerHTML = '<svg viewBox="30 30 180 190">' + treeSVG(t.done ? 1 : 0.8, !t.done, false, t.fruit) + '</svg><span></span>';
+    d.querySelector('span').textContent = t.name;
+    f.appendChild(d);
+  }
+  updateActions();
+}
+function updateActions() {
+  $('selBtn').hidden = selectMode;
+  $('delSel').hidden = !selectMode;
+  $('cancelSel').hidden = !selectMode;
+  $('delSel').textContent = '刪除選取（' + selected.size + '）';
+  $('delSel').disabled = selected.size === 0;
+  $('selBtn').disabled = $('clear').disabled = !data.trees.length;
+}
+function exitSelect() { selectMode = false; selected.clear(); render(); }
+$('selBtn').addEventListener('click', () => {
+  if (!data.trees.length) return;
+  selectMode = true; selected.clear(); render();
+  if (!running) $('state').textContent = '點選要刪除的樹，再按「刪除選取」。';
+});
+$('cancelSel').addEventListener('click', exitSelect);
+$('delSel').addEventListener('click', () => {
+  const n = selected.size;
+  if (!n || !confirm('要刪除選取的 ' + n + ' 棵樹嗎？這個動作無法復原。')) return;
+  data.trees = data.trees.filter((_, i) => !selected.has(i));
+  save(); exitSelect();
+  if (!running) $('state').textContent = '已刪除 ' + n + ' 棵樹。';
+});
+$('clear').addEventListener('click', () => {
+  if (!data.trees.length || !confirm('要刪除整座森林嗎？這個動作無法復原。')) return;
+  data.trees = []; save(); exitSelect();
+  if (!running) $('state').textContent = '森林已清空。';
+});
+
+/* ---- 後花園：林間小道 ---- */
+let lastAddedT = 0;
+const GW = 800, GH = 480, HZ = 190;
+const esc = x => String(x).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const SLOTS = (() => {
+  const a = [];
+  for (let lane = 0; lane < 2; lane++)
+    for (let row = 0; row < 10; row++)
+      for (const side of [-1, 1]) a.push({ lane, row, side });
+  return a;   // 共 40 個位置，由近到遠、由路邊到外側
+})();
+const FRUIT_DOT = {apple:'#d94b43', orange:'#f28c28', lemon:'#f2d544', cherry:'#b0173a', peach:'#f7a38c', grape:'#7a4bb0'};
+
+function gardenBackdrop() {
+  let b = `<defs>
+    <linearGradient id="gSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--sky1)"/><stop offset="1" style="stop-color:var(--sky2)"/></linearGradient>
+    <linearGradient id="gGrass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--grass1)"/><stop offset="1" style="stop-color:var(--grass2)"/></linearGradient>
+    <linearGradient id="gPath" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--path1)"/><stop offset="1" style="stop-color:var(--path2)"/></linearGradient>
+    <radialGradient id="gGlow"><stop offset="0" stop-color="#fff6c8" stop-opacity=".95"/><stop offset="1" stop-color="#fff6c8" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="${GW}" height="${HZ + 10}" fill="url(#gSky)"/>
+  <circle cx="400" cy="${HZ - 10}" r="130" fill="url(#gGlow)" style="opacity:var(--glowo)"/>
+  <path d="M0 ${HZ} Q120 140 260 172 T520 160 T800 176 V${HZ + 10} H0Z" style="fill:var(--hill1)"/>
+  <path d="M0 ${HZ + 4} Q180 160 340 180 T640 170 T800 184 V${HZ + 10} H0Z" style="fill:var(--hill2)"/>`;
+  for (let x = -10; x < GW + 20; x += 26) {          // 遠方樹林，中間留出小道盡頭的光
+    if (x > 352 && x < 448) continue;
+    const r = 15 + Math.abs(Math.sin(x * 0.37)) * 12;
+    b += `<circle cx="${x}" cy="${(HZ - 4 - Math.abs(Math.cos(x * 0.21)) * 8).toFixed(1)}" r="${r.toFixed(1)}" style="fill:var(--far)"/>`;
+  }
+  b += `<rect y="${HZ}" width="${GW}" height="${GH - HZ}" fill="url(#gGrass)"/>
+  <path d="M388 ${HZ} L412 ${HZ} L600 ${GH} L200 ${GH}Z" fill="url(#gPath)"/>
+  <path d="M388 ${HZ} L200 ${GH} M412 ${HZ} L600 ${GH}" style="stroke:var(--pathe)" stroke-width="3" fill="none"/>`;
+  [[.18,-.35],[.3,.4],[.5,-.25],[.62,.3],[.82,-.45],[.9,.15]].forEach(([t, o]) => {   // 小路上的石子
+    const y = HZ + (GH - HZ) * t, hw = 12 + t * 188;
+    b += `<ellipse cx="${(400 + o * hw).toFixed(1)}" cy="${y.toFixed(1)}" rx="${(3 + t * 9).toFixed(1)}" ry="${(1.2 + t * 3).toFixed(1)}" style="fill:var(--pathe)" opacity=".7"/>`;
+  });
+  return b;
+}
+
+function renderGarden() {
+  const wins = data.trees.filter(t => t.done);
+  const shown = wins.slice(0, SLOTS.length);
+  const items = shown.map((t, k) => {
+    const s = SLOTS[k];
+    const d = 0.92 - s.row * 0.075 - s.lane * 0.04;
+    const y = HZ + 280 * Math.pow(d, 1.35);
+    const sc = 0.28 + 0.95 * d;
+    const halfW = 12 + (y - HZ) / (GH - HZ) * 188;
+    const jit = (((k * 37) % 11) - 5) * 2;
+    return { t, k, y, sc, x: 400 + s.side * (halfW + (72 + s.lane * 92) * sc) + jit };
+  }).sort((a, b) => a.y - b.y);
+
+  let svg = gardenBackdrop();
+  items.forEach(({ t, k, x, y, sc }) => {
+    const f = FRUITS[t.fruit] ? t.fruit : 'apple';
+    svg += `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${sc.toFixed(3)}) translate(-120 -210)">` +
+      `<g class="tr${t.t === lastAddedT ? ' newest' : ''}" data-k="${k}" tabindex="0" role="button" style="color:var(--ink)" ` +
+      `aria-label="${FRUITS[f].name}樹，${esc(t.name)}">${treeSVG(1, false, true, f)}<title>${FRUITS[f].name}樹：${esc(t.name)}</title></g></g>`;
+  });
+  $('garden').innerHTML = svg;
+
+  const show = k => {
+    const t = shown[k], f = FRUITS[t.fruit] ? t.fruit : 'apple';
+    $('gInfo').textContent = FRUITS[f].name + '樹，「' + t.name + '」，專注 ' + fmt(t.mins * 60) + '，' + new Date(t.t).toLocaleDateString('zh-TW') + ' 種下。';
+  };
+  $('garden').querySelectorAll('.tr').forEach(g => {
+    const k = +g.dataset.k;
+    g.addEventListener('click', () => show(k));
+    g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); show(k); } });
+  });
+
+  $('gEmpty').hidden = wins.length > 0;
+  const extra = wins.length - shown.length;
+  $('gCount').textContent = wins.length ? '後花園裡有 ' + wins.length + ' 棵樹' + (extra > 0 ? '（另有 ' + extra + ' 棵在更遠的林中）' : '') : '';
+  const cnt = {};
+  wins.forEach(t => { const f = FRUITS[t.fruit] ? t.fruit : 'apple'; cnt[f] = (cnt[f] || 0) + 1; });
+  $('gChips').innerHTML = FRUIT_KEYS.filter(f => cnt[f]).map(f => `<span><i style="background:${FRUIT_DOT[f]}"></i>${FRUITS[f].name} × ${cnt[f]}</span>`).join('');
+}
+
+function showView(v) {
+  const g = v === 'garden';
+  $('viewFocus').hidden = g;
+  $('viewGarden').hidden = !g;
+  $('tabFocus').setAttribute('aria-selected', !g);
+  $('tabGarden').setAttribute('aria-selected', g);
+  if (g) renderGarden();
+  try { history.replaceState(null, '', g ? '#garden' : '#focus'); } catch (e) {}
+}
+$('tabFocus').addEventListener('click', () => showView('focus'));
+$('tabGarden').addEventListener('click', () => showView('garden'));
+$('gGo').addEventListener('click', () => showView('focus'));
+
+$('time').textContent = fmt(secs);
+drawScene(0, false);
+render();
+showView(location.hash === '#garden' ? 'garden' : 'focus');
+</script>
+</body>
+</html>
